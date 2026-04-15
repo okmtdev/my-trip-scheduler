@@ -82,9 +82,18 @@ gcloud storage buckets add-iam-policy-binding gs://YOUR_BUCKET_NAME \
 
 #### 4. アプリケーションのビルド
 
+`BASE_PATH` にバケット名を指定してビルドします。
+Cloud Storage は `https://storage.googleapis.com/BUCKET_NAME/` の形式で配信されるため、アセットパスにバケット名のプレフィックスが必要です。
+
 ```bash
-npm run build
+BASE_PATH=/YOUR_BUCKET_NAME npm run build
 ```
+
+> **Note**: カスタムドメインや Load Balancer 経由（ルートから配信）の場合は `BASE_PATH` なしでビルドしてください。
+>
+> ```bash
+> npm run build
+> ```
 
 `out/` ディレクトリに静的ファイルが生成されます。
 
