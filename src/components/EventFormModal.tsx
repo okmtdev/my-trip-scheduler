@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ScheduleEvent,
   Family,
@@ -12,6 +12,133 @@ import {
   TRANSPORTATION_ICONS,
   generateId,
 } from '@/lib/types';
+
+function TimeComboBox({
+  value,
+  options,
+  min,
+  max,
+  onChange,
+}: {
+  value: number;
+  options: number[];
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(value.toString().padStart(2, '0'));
+  const ref = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setInputValue(value.toString().padStart(2, '0'));
+  }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Scroll to selected item when dropdown opens
+  useEffect(() => {
+    if (isOpen && listRef.current) {
+      const selected = listRef.current.querySelector('[data-selected="true"]');
+      if (selected) {
+        selected.scrollIntoView({ block: 'center' });
+      }
+    }
+  }, [isOpen]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 2);
+    setInputValue(raw);
+    const n = parseInt(raw, 10);
+    if (!isNaN(n) && n >= min && n <= max) {
+      onChange(n);
+    }
+  };
+
+  const handleBlur = () => {
+    const n = parseInt(inputValue, 10);
+    if (isNaN(n) || n < min || n > max) {
+      setInputValue(value.toString().padStart(2, '0'));
+    } else {
+      onChange(n);
+      setInputValue(n.toString().padStart(2, '0'));
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIsOpen(true);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    } else if (e.key === 'Enter') {
+      setIsOpen(false);
+      handleBlur();
+    }
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center">
+        <input
+          type="text"
+          inputMode="numeric"
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={() => setIsOpen(true)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          className="w-14 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }}
+          className="ml-0.5 text-gray-400 hover:text-gray-600 text-xs"
+        >
+          ▼
+        </button>
+      </div>
+      {isOpen && (
+        <div
+          ref={listRef}
+          className="absolute top-full left-0 mt-1 w-16 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50"
+        >
+          {options.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              data-selected={opt === value}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(opt);
+                setInputValue(opt.toString().padStart(2, '0'));
+                setIsOpen(false);
+              }}
+              className={`w-full px-2 py-1.5 text-sm text-center hover:bg-blue-50 transition-colors ${
+                opt === value ? 'bg-blue-100 text-blue-700 font-medium' : ''
+              }`}
+            >
+              {opt.toString().padStart(2, '0')}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface EventFormModalProps {
   isOpen: boolean;
@@ -116,27 +243,10 @@ export default function EventFormModal({
     onClose();
   };
 
-  const clamp = (value: number, min: number, max: number) =>
-    Math.max(min, Math.min(max, value));
-
-  const handleNumberInput = (
-    raw: string,
-    min: number,
-    max: number,
-    setter: (v: number) => void,
-  ) => {
-    if (raw === '') { setter(min); return; }
-    const n = parseInt(raw, 10);
-    if (!isNaN(n)) setter(clamp(n, min, max));
-  };
-
   if (!isOpen) return null;
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const allMinutes = Array.from({ length: 60 }, (_, i) => i);
-
-  const timeInputClass =
-    'w-16 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
+  const minuteOptions = Array.from({ length: 12 }, (_, i) => i * 5);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -214,25 +324,9 @@ export default function EventFormModal({
                 開始時間
               </label>
               <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  list="hour-options"
-                  min={0}
-                  max={23}
-                  value={startHour.toString().padStart(2, '0')}
-                  onChange={(e) => handleNumberInput(e.target.value, 0, 23, setStartHour)}
-                  className={timeInputClass}
-                />
-                <span className="text-gray-500">:</span>
-                <input
-                  type="number"
-                  list="minute-options"
-                  min={0}
-                  max={59}
-                  value={startMinute.toString().padStart(2, '0')}
-                  onChange={(e) => handleNumberInput(e.target.value, 0, 59, setStartMinute)}
-                  className={timeInputClass}
-                />
+                <TimeComboBox value={startHour} options={hourOptions} min={0} max={23} onChange={setStartHour} />
+                <span className="text-gray-500 font-medium">:</span>
+                <TimeComboBox value={startMinute} options={minuteOptions} min={0} max={59} onChange={setStartMinute} />
               </div>
             </div>
             <div>
@@ -240,37 +334,11 @@ export default function EventFormModal({
                 終了時間
               </label>
               <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  list="hour-options"
-                  min={0}
-                  max={23}
-                  value={endHour.toString().padStart(2, '0')}
-                  onChange={(e) => handleNumberInput(e.target.value, 0, 23, setEndHour)}
-                  className={timeInputClass}
-                />
-                <span className="text-gray-500">:</span>
-                <input
-                  type="number"
-                  list="minute-options"
-                  min={0}
-                  max={59}
-                  value={endMinute.toString().padStart(2, '0')}
-                  onChange={(e) => handleNumberInput(e.target.value, 0, 59, setEndMinute)}
-                  className={timeInputClass}
-                />
+                <TimeComboBox value={endHour} options={hourOptions} min={0} max={23} onChange={setEndHour} />
+                <span className="text-gray-500 font-medium">:</span>
+                <TimeComboBox value={endMinute} options={minuteOptions} min={0} max={59} onChange={setEndMinute} />
               </div>
             </div>
-            <datalist id="hour-options">
-              {hours.map((h) => (
-                <option key={h} value={h} />
-              ))}
-            </datalist>
-            <datalist id="minute-options">
-              {allMinutes.map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
           </div>
 
           {/* URL */}
