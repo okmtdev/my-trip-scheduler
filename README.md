@@ -80,26 +80,36 @@ gcloud storage buckets add-iam-policy-binding gs://YOUR_BUCKET_NAME \
   --role=roles/storage.objectViewer
 ```
 
-#### 4. アプリケーションのビルド
+#### 4. デプロイ設定ファイルの作成
 
-`BASE_PATH` にバケット名を指定してビルドします。
-Cloud Storage は `https://storage.googleapis.com/BUCKET_NAME/` の形式で配信されるため、アセットパスにバケット名のプレフィックスが必要です。
+`.env.production` を作成し、バケット名を設定します。
+Next.js はビルド時にこのファイルを自動で読み込みます。
 
 ```bash
-BASE_PATH=/YOUR_BUCKET_NAME npm run build
+cp .env.example .env.production
 ```
 
-> **Note**: カスタムドメインや Load Balancer 経由（ルートから配信）の場合は `BASE_PATH` なしでビルドしてください。
->
-> ```bash
-> npm run build
-> ```
+`.env.production` を編集:
 
-`out/` ディレクトリに静的ファイルが生成されます。
+```env
+BASE_PATH=/YOUR_BUCKET_NAME
+GCS_BUCKET=YOUR_BUCKET_NAME
+```
 
-#### 5. ビルド成果物のアップロード
+> **Note**: カスタムドメインや Load Balancer 経由（ルートから配信）の場合は `BASE_PATH` を空にしてください。
+
+#### 5. ビルド & デプロイ
 
 ```bash
+npm run deploy
+```
+
+このコマンドで `next build` → `gcloud storage rsync` が一括実行されます。
+
+個別に実行する場合:
+
+```bash
+npm run build
 gcloud storage rsync out/ gs://YOUR_BUCKET_NAME --recursive --delete-unmatched-destination-objects
 ```
 

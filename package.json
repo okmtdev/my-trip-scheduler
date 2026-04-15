@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "next build && bash -c 'source .env.production 2>/dev/null; gcloud storage rsync out/ gs://${GCS_BUCKET} --recursive --delete-unmatched-destination-objects'"
   },
   "dependencies": {
     "next": "^14.2.0",
