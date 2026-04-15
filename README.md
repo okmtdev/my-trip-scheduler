@@ -69,13 +69,15 @@ gcloud config set project YOUR_PROJECT_ID
 #### 2. Cloud Storage バケットの作成
 
 ```bash
-gsutil mb -l asia-northeast1 gs://YOUR_BUCKET_NAME
+gcloud storage buckets create gs://YOUR_BUCKET_NAME --location=asia-northeast1
 ```
 
 #### 3. バケットの公開設定
 
 ```bash
-gsutil iam ch allUsers:objectViewer gs://YOUR_BUCKET_NAME
+gcloud storage buckets add-iam-policy-binding gs://YOUR_BUCKET_NAME \
+  --member=allUsers \
+  --role=roles/storage.objectViewer
 ```
 
 #### 4. アプリケーションのビルド
@@ -89,13 +91,15 @@ npm run build
 #### 5. ビルド成果物のアップロード
 
 ```bash
-gsutil -m rsync -r -d out/ gs://YOUR_BUCKET_NAME
+gcloud storage rsync out/ gs://YOUR_BUCKET_NAME --recursive --delete-unmatched-destination-objects
 ```
 
 #### 6. 静的ウェブサイトの設定
 
 ```bash
-gsutil web set -m index.html -e 404.html gs://YOUR_BUCKET_NAME
+gcloud storage buckets update gs://YOUR_BUCKET_NAME \
+  --web-main-page-suffix=index.html \
+  --web-error-page=404.html
 ```
 
 #### 7. アクセス確認
@@ -130,15 +134,26 @@ gcloud compute backend-buckets create YOUR_BACKEND_BUCKET \
 gcloud compute url-maps create YOUR_URL_MAP \
   --default-backend-bucket=YOUR_BACKEND_BUCKET
 
-# ターゲット HTTP プロキシの作成
-gcloud compute target-http-proxies create YOUR_HTTP_PROXY \
-  --url-map=YOUR_URL_MAP
+# ターゲット HTTPS プロキシの作成（SSL 証明書付き）
+gcloud compute ssl-certificates create YOUR_SSL_CERT \
+  --domains=YOUR_DOMAIN \
+  --global
+
+gcloud compute target-https-proxies create YOUR_HTTPS_PROXY \
+  --url-map=YOUR_URL_MAP \
+  --ssl-certificates=YOUR_SSL_CERT \
+  --global
+
+# グローバル外部 IP アドレスの予約
+gcloud compute addresses create YOUR_IP_NAME \
+  --global
 
 # フォワーディングルールの作成
 gcloud compute forwarding-rules create YOUR_FWD_RULE \
   --global \
-  --target-http-proxy=YOUR_HTTP_PROXY \
-  --ports=80
+  --target-https-proxy=YOUR_HTTPS_PROXY \
+  --address=YOUR_IP_NAME \
+  --ports=443
 ```
 
 ## ライセンス
