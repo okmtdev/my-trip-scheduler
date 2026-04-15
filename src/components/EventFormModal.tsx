@@ -116,10 +116,27 @@ export default function EventFormModal({
     onClose();
   };
 
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, value));
+
+  const handleNumberInput = (
+    raw: string,
+    min: number,
+    max: number,
+    setter: (v: number) => void,
+  ) => {
+    if (raw === '') { setter(min); return; }
+    const n = parseInt(raw, 10);
+    if (!isNaN(n)) setter(clamp(n, min, max));
+  };
+
   if (!isOpen) return null;
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  const minutes = [0, 15, 30, 45];
+  const allMinutes = Array.from({ length: 60 }, (_, i) => i);
+
+  const timeInputClass =
+    'w-16 border border-gray-300 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -196,62 +213,64 @@ export default function EventFormModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 開始時間
               </label>
-              <div className="flex gap-1">
-                <select
-                  value={startHour}
-                  onChange={(e) => setStartHour(Number(e.target.value))}
-                  className="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {hours.map((h) => (
-                    <option key={h} value={h}>
-                      {h.toString().padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
-                <span className="self-center text-gray-500">:</span>
-                <select
-                  value={startMinute}
-                  onChange={(e) => setStartMinute(Number(e.target.value))}
-                  className="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {minutes.map((m) => (
-                    <option key={m} value={m}>
-                      {m.toString().padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  list="hour-options"
+                  min={0}
+                  max={23}
+                  value={startHour.toString().padStart(2, '0')}
+                  onChange={(e) => handleNumberInput(e.target.value, 0, 23, setStartHour)}
+                  className={timeInputClass}
+                />
+                <span className="text-gray-500">:</span>
+                <input
+                  type="number"
+                  list="minute-options"
+                  min={0}
+                  max={59}
+                  value={startMinute.toString().padStart(2, '0')}
+                  onChange={(e) => handleNumberInput(e.target.value, 0, 59, setStartMinute)}
+                  className={timeInputClass}
+                />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 終了時間
               </label>
-              <div className="flex gap-1">
-                <select
-                  value={endHour}
-                  onChange={(e) => setEndHour(Number(e.target.value))}
-                  className="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {hours.map((h) => (
-                    <option key={h} value={h}>
-                      {h.toString().padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
-                <span className="self-center text-gray-500">:</span>
-                <select
-                  value={endMinute}
-                  onChange={(e) => setEndMinute(Number(e.target.value))}
-                  className="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {minutes.map((m) => (
-                    <option key={m} value={m}>
-                      {m.toString().padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  list="hour-options"
+                  min={0}
+                  max={23}
+                  value={endHour.toString().padStart(2, '0')}
+                  onChange={(e) => handleNumberInput(e.target.value, 0, 23, setEndHour)}
+                  className={timeInputClass}
+                />
+                <span className="text-gray-500">:</span>
+                <input
+                  type="number"
+                  list="minute-options"
+                  min={0}
+                  max={59}
+                  value={endMinute.toString().padStart(2, '0')}
+                  onChange={(e) => handleNumberInput(e.target.value, 0, 59, setEndMinute)}
+                  className={timeInputClass}
+                />
               </div>
             </div>
+            <datalist id="hour-options">
+              {hours.map((h) => (
+                <option key={h} value={h} />
+              ))}
+            </datalist>
+            <datalist id="minute-options">
+              {allMinutes.map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
           </div>
 
           {/* URL */}
