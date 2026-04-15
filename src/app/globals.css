@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .timeline-slot {
+    @apply border-t border-gray-200 min-h-[3rem] relative cursor-pointer hover:bg-gray-50 transition-colors;
+  }
+  .timeline-slot:hover::after {
+    content: '+';
+    @apply absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-lg;
+  }
+}
