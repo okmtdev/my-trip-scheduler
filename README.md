@@ -83,7 +83,6 @@ gcloud storage buckets add-iam-policy-binding gs://YOUR_BUCKET_NAME \
 #### 4. デプロイ設定ファイルの作成
 
 `.env.production` を作成し、バケット名を設定します。
-Next.js はビルド時にこのファイルを自動で読み込みます。
 
 ```bash
 cp .env.example .env.production
@@ -92,11 +91,8 @@ cp .env.example .env.production
 `.env.production` を編集:
 
 ```env
-BASE_PATH=/YOUR_BUCKET_NAME
 GCS_BUCKET=YOUR_BUCKET_NAME
 ```
-
-> **Note**: カスタムドメインや Load Balancer 経由（ルートから配信）の場合は `BASE_PATH` を空にしてください。
 
 #### 5. ビルド & デプロイ
 
